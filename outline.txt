@@ -1,0 +1,9 @@
+components should include App(main), InputBox, FetchAndDisplay, Slideshow
+
+have input field {city name},{country code} --> link website https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes
+once submitted, return (up to) 5 sets of coordinates --> display coordinates and location on screen for user to click
+
+once clicked, clear screen and display only location selected (include slideshow of different features like temp, humidity, map, etc)
+include a button below slideshow to take user back to main screen with input field.
+
+FAST_REFRESH=false
