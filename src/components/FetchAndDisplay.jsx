@@ -1,6 +1,7 @@
 //wind vane, anemometer
 
 import React, {Component} from 'react';
+import Results from './Results';
 import axios from 'axios';
 
 class FetchAndDisplay extends Component {
@@ -12,7 +13,10 @@ class FetchAndDisplay extends Component {
     countryCode: this.props.countryCode,
     showComponent: false,
     errorMsg: "",
-    geoObj: {}
+    geoObj: {},
+    selected: false,
+    index: null,
+    showContinueButton: false
     };
   }
 
@@ -72,12 +76,11 @@ class FetchAndDisplay extends Component {
       lon = value[1];
 
       //shows current/hourly data for 5 days ago
-      // let API_URL = `https://api.openweather map.org/data/2.5/onecall/timemachine?lat=${lat}&lon=${lon}&dt=${time}&units=imperial&appid=${API_KEY}`;
+      // let API_URL = `https://api.openweathermap.org/data/2.5/onecall/timemachine?lat=${lat}&lon=${lon}&dt=${time}&units=imperial&appid=${API_KEY}`;
 
       //predicts **daily**/hourly/minutely temps for next 7 days
       //include *exclude* as query param
       let API_URL = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`;
-      
 
       axios.get(API_URL)
       .then(res => {
@@ -89,20 +92,37 @@ class FetchAndDisplay extends Component {
     });
   }
 
+  //fetchLatLon when component mounts
   componentDidMount() {
     const API_KEY = process.env.REACT_APP_WEATHER_API_KEY;
 
     this.fetchLatLon(API_KEY);
   }
 
+  //When one of location button clicks, set index to value of value parameter of button in renderOptions funcion
+  //Also, set showContinueButton flag to true so user can continue
+  selectLocationButton = (e) => {
+    let index = Number(e.target.value);
+    this.setState({ index, showContinueButton: true });
+  }
+
+  //render either errorMsg if unknown location or submitted locations as buttons 
   renderOptions = () => {
     if (this.state.showComponent) {
       if (this.state.errorMsg !== "") {
         return <p>{this.state.errorMsg}</p>;
       }
       else {
+        let id;
         return Object.values(this.state.geoObj).map((value, index) => {
-          return <button key={index} className="location-btn">{value[2]}</button>;
+          if (this.state.index === index) {
+            id = "location-btn-selected";
+          }
+          else {
+            id = null;
+          }
+          // return <button key={index} className="location-btn" onClick={this.selectLocationButton}>{value[2]}</button>;
+          return <button key={index} value={index} className="location-btn" id={id} onClick={this.selectLocationButton}>{value[2]}</button>;
         });
       }
     }
@@ -112,6 +132,8 @@ class FetchAndDisplay extends Component {
     return (
       <div id="locations-div">
         {this.renderOptions()}
+        {/* pass other weather data too */}
+        {this.state.showContinueButton ? <button id="continue-btn" className="conditional-btn" onClick={() => this.props.onContinueButtonClick(this.state.index)}>Continue</button> : null}
       </div>
     )
   }

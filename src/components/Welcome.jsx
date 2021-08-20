@@ -29,6 +29,10 @@ export class Welcome extends Component {
     this.setState({ id: 0 });
   }
 
+  newPage = () => {
+    this.setState({ page: 0 })
+  }
+
   // contains jsx for Welcome page
   displayWelcomePage = () => {
     return (

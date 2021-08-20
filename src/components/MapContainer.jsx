@@ -13,7 +13,7 @@ class MapContainer extends Component {
     showingInfoWindow: false,
     showingMarker: false,
     activeMarker: {},
-    button: false
+    showContinueButton: false
   };
 
   onMapClick = (t, map, coord) => {
@@ -32,7 +32,7 @@ class MapContainer extends Component {
       });
     }
 
-    this.setState({ button: true });
+    this.setState({ showContinueButton: true });
 
     this.setState({
       markers: [
@@ -112,11 +112,8 @@ class MapContainer extends Component {
               </InfoWindow>
           </Map>
         </div>
-        <div>
-          <button id="back-btn" className="conditional-btn" onClick={this.props.onBackButtonClick}>Back</button>
-          <button id="continue-btn" className="conditional-btn">Continue</button>
-        </div>
-
+        <button id="back-btn" className="conditional-btn" onClick={this.props.onBackButtonClick}>Back</button>
+        {this.state.showContinueButton ? <button id="continue-btn" className="conditional-btn">Continue</button> : null}
       </div>
     );
   }

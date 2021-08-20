@@ -7,6 +7,8 @@ class MyForm extends Component {
     error: false,
     errorMsg: "",
     showComponent: false,
+    locationIndex: null,
+    id: 0
   };
 
   //handle text box change
@@ -97,24 +99,38 @@ class MyForm extends Component {
   //if no error, try to render
   renderFD = () => {
     const [city, countryCode] = this.getProps();
-    return <FetchAndDisplay city={city} countryCode={countryCode}/>;
+    //issue 
+    return <FetchAndDisplay city={city} countryCode={countryCode} onContinueButtonClick={this.continue}/>;
   }
 
-  render() {
+  continue = (index) => {
+    if (index !== this.state.locationIndex) {
+      this.setState({ locationIndex: index, id: 1 });
+    }
+  }
+
+  displaySearchPage = () => {
     return (
       <div id="form-div">
         <div>
           <form onSubmit={this.handleSubmit}>
-            <input type="text" value={this.state.value} onChange={this.handleChange} />
-            <input type="submit" value="Submit" />
+            <input id="text-entry" type="text" placeholder="Enter location..." value={this.state.value} onChange={this.handleChange} />
+            <br />
+            <input id="text-entry-btn" type="submit" value="SUBMIT" />
           </form>
           {this.state.showComponent ? this.renderFD() : <p>{this.state.errorMsg}</p>}
         </div>
-        <div>
-          <button id="back-btn" className="conditional-btn" onClick={this.props.onBackButtonClick}>Back</button>
-          <button id="continue-btn" className="conditional-btn">Continue</button>
-        </div>
+        <button id="back-btn" className="conditional-btn" onClick={this.props.onBackButtonClick}>Back</button>
+      </div>
+    )
+  }
 
+  render() {
+    return (
+      <div>
+        {/* where null is, is where new component will be */}
+        {/* pass onBackButtonClick to component to go back to homepage */}
+        {!this.state.id ? this.displaySearchPage() : null}
       </div>
     )
   }
