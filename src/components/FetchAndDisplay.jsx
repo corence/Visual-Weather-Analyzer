@@ -1,7 +1,6 @@
 //wind vane, anemometer
 
 import React, {Component} from 'react';
-import Results from './Results';
 import axios from 'axios';
 
 class FetchAndDisplay extends Component {
@@ -13,18 +12,29 @@ class FetchAndDisplay extends Component {
     countryCode: this.props.countryCode,
     showComponent: false,
     errorMsg: "",
-    geoObj: {},
-    selected: false,
-    index: null,
+    geolocationObject: {},
+    currentData: {},
+    futureData: {},
+    historicalData: {},
+    finalLocationName: "",
+    locationIndex: null,
     showContinueButton: false
     };
   }
 
-  fetchLatLon = (API_KEY) => {
+  //fetchLatLon when component mounts
+  componentDidMount() {
+    const API_KEY = process.env.REACT_APP_WEATHER_API_KEY;
+
+    this.fetchLatLon(API_KEY);
+  }
+
+  //fetch latitude and longitude for all possible locations from form input on each input
+  fetchLatLon = async (API_KEY) => {
     //2 or 3 letter country code works
     const API_URL = `http://api.openweathermap.org/geo/1.0/direct?q=${this.state.city},${this.state.countryCode}&limit=5&appid=${API_KEY}`;
 
-    axios.get(API_URL)
+    await axios.get(API_URL)
     .then(res => {
       //no location found
       if (res.data.length === 0) {
@@ -36,23 +46,20 @@ class FetchAndDisplay extends Component {
       //location found
       else
       {
-        let geoObj = {};
+        let geolocationObject = {};
 
         res.data.forEach((value, index) => {
           //if array has state key, include its value
           if (value.state) {
-          geoObj[index] = [value.lat, value.lon, value.name + "," + value.state + "," + value.country];
+          geolocationObject[index] = [value.lat, value.lon, value.name + "," + value.state + "," + value.country];
           }
           else {
-          geoObj[index] = [value.lat, value.lon, value.name + "," + value.country];
+          geolocationObject[index] = [value.lat, value.lon, value.name + "," + value.country];
           }
         });
 
-        this.setState({ geoObj });
-        console.log(this.state.geoObj);
-
-        //fetch forecast data
-        this.fetchForecast(API_KEY);
+        this.setState({ geolocationObject });
+        // console.log(this.state.geolocationObject);
       }
     })
     .catch(err => {
@@ -61,49 +68,81 @@ class FetchAndDisplay extends Component {
       this.setState({ errorMsg: err });
     });
 
-    //set showComponent to true so errMsg or geoObj can be displayed on screen
+    //set showComponent to true so errMsg or geolocationObject can be displayed on screen
     this.setState({ showComponent: true });
-
   }
 
-  fetchForecast = (API_KEY) => {
-    let lat, lon;
+  // fetch future forecast when continue button clicked
+  fetchFutureForecast = async (API_KEY, lat, lon) => {
+    let currentData, futureData;
 
-    // let time = ((Math.floor(Date.now()/1000)) - (86400 * 5));
+    // predicts **daily**/hourly/minutely temps for next 7 days
+    const API_URL = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`;
 
-    Object.values(this.state.geoObj).forEach(value => {
-      lat = value[0];
-      lon = value[1];
+    await axios.get(API_URL)
+    .then(res => {
+      currentData = res.data.current;
+      futureData = res.data.daily;
+    })
+    .catch(err => {
+      console.log(err);
+    });
 
-      //shows current/hourly data for 5 days ago
-      // let API_URL = `https://api.openweathermap.org/data/2.5/onecall/timemachine?lat=${lat}&lon=${lon}&dt=${time}&units=imperial&appid=${API_KEY}`;
+    this.setState({ currentData, futureData });
+  }
 
-      //predicts **daily**/hourly/minutely temps for next 7 days
-      //include *exclude* as query param
-      let API_URL = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`;
+  // fetch historical forecast when continue button clicked
+  //shows current/hourly data for 5 days ago
+  fetchHistoricalForecast = async (API_KEY, lat, lon) => {
+    let time, API_URL;
+    let historicalData = {};
 
-      axios.get(API_URL)
+    // 1-5 days
+    for (let i = 1; i < 6; i++) {
+      time = ((Math.floor(Date.now()/1000)) - (86400 * i+1));
+
+      // fetches up to 5 past days forecast 
+      API_URL = `https://api.openweathermap.org/data/2.5/onecall/timemachine?lat=${lat}&lon=${lon}&dt=${time}&units=imperial&appid=${API_KEY}`;
+      await axios.get(API_URL)
       .then(res => {
-        console.log(res);
+        // console.log(res);
+        historicalData[i-1] = res.data.current;
       })
       .catch(err => {
         console.log(err);
       })
-    });
+    }
+
+    this.setState({ historicalData });
   }
 
-  //fetchLatLon when component mounts
-  componentDidMount() {
+  //when continue button clicked, get lat, lon and fetch future and historical forecast
+  onContinueButtonClick = async () => {
     const API_KEY = process.env.REACT_APP_WEATHER_API_KEY;
 
-    this.fetchLatLon(API_KEY);
+    let latLonArray = Object.values(this.state.geolocationObject);
+    let lat = latLonArray[this.state.locationIndex][0];
+    let lon = latLonArray[this.state.locationIndex][1];
+
+    await this.fetchFutureForecast(API_KEY, lat, lon);
+    await this.fetchHistoricalForecast(API_KEY, lat, lon);
+    
+    console.log("current data for " + this.state.finalLocationName, this.state.currentData);
+    console.log("historical data for " + this.state.finalLocationName, this.state.historicalData);
+    console.log("future data for " + this.state.finalLocationName, this.state.futureData);
+    // pass data to parent function to change flag (send to result screen)
+    this.props.onContinue(this.state.locationIndex, this.state.finalLocationName, this.state.currentData, this.state.futureData, this.state.historicalData);
   }
 
-  //When one of location button clicks, set index to value of value parameter of button in renderOptions funcion
-  //Also, set showContinueButton flag to true so user can continue
+  //When one of location button clicks set index, finalLocationName, and showContinueButton
   selectLocationButton = (e) => {
-    let index = Number(e.target.value);
-    this.setState({ index, showContinueButton: true });
+    let locationIndex = Number(e.target.value);
+    let finalLocationName = e.target.innerHTML;
+    this.setState({ 
+      locationIndex, 
+      finalLocationName,
+      showContinueButton: true 
+    });
   }
 
   //render either errorMsg if unknown location or submitted locations as buttons 
@@ -114,8 +153,8 @@ class FetchAndDisplay extends Component {
       }
       else {
         let id;
-        return Object.values(this.state.geoObj).map((value, index) => {
-          if (this.state.index === index) {
+        return Object.values(this.state.geolocationObject).map((value, index) => {
+          if (this.state.locationIndex === index) {
             id = "location-btn-selected";
           }
           else {
@@ -132,8 +171,7 @@ class FetchAndDisplay extends Component {
     return (
       <div id="locations-div">
         {this.renderOptions()}
-        {/* pass other weather data too */}
-        {this.state.showContinueButton ? <button id="continue-btn" className="conditional-btn" onClick={() => this.props.onContinueButtonClick(this.state.index)}>Continue</button> : null}
+        {this.state.showContinueButton ? <button id="continue-btn" className="conditional-btn" onClick={this.onContinueButtonClick}>Continue</button> : null}
       </div>
     )
   }

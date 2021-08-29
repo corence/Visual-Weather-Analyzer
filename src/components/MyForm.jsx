@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import FetchAndDisplay from './FetchAndDisplay';
+import Results from './Results';
 
 class MyForm extends Component {
   state = {
@@ -8,7 +9,12 @@ class MyForm extends Component {
     errorMsg: "",
     showComponent: false,
     locationIndex: null,
-    id: 0
+    id: 0,
+    // id: 1,
+    currentData: {},
+    futureData: {},
+    historicalData: {},
+    finalLocationName: ""
   };
 
   //handle text box change
@@ -100,12 +106,19 @@ class MyForm extends Component {
   renderFD = () => {
     const [city, countryCode] = this.getProps();
     //issue 
-    return <FetchAndDisplay city={city} countryCode={countryCode} onContinueButtonClick={this.continue}/>;
+    return <FetchAndDisplay city={city} countryCode={countryCode} onContinue={this.continue}/>;
   }
 
-  continue = (index) => {
-    if (index !== this.state.locationIndex) {
-      this.setState({ locationIndex: index, id: 1 });
+  continue = (locationIndex, finalLocationName, currentData, futureData, historicalData) => {
+    if (locationIndex !== this.state.locationIndex) {
+      this.setState({ 
+        id: 1,
+        locationIndex,
+        currentData,
+        futureData,
+        historicalData,
+        finalLocationName
+      });
     }
   }
 
@@ -128,9 +141,17 @@ class MyForm extends Component {
   render() {
     return (
       <div>
-        {/* where null is, is where new component will be */}
-        {/* pass onBackButtonClick to component to go back to homepage */}
-        {!this.state.id ? this.displaySearchPage() : null}
+        {
+        !this.state.id 
+        ? this.displaySearchPage() 
+        : <Results 
+            name={this.state.finalLocationName} 
+            currentData={this.state.currentData} 
+            futureData={this.state.futureData} 
+            historicalData={this.state.historicalData} 
+            returnHome={this.props.onBackButtonClick} 
+          />
+        }
       </div>
     )
   }
