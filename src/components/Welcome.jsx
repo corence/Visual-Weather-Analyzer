@@ -21,25 +21,35 @@ export class Welcome extends Component {
 
   // sets value of id based off which div clicked (Search/Map)
   setID = (value) => {
-    this.setState({ id: value });
+    if (value !== 0) {
+      this.setState({ id: value });
+    }
   }
 
   // called in child class to return to Welcome page
   resetID = () => {
     this.setState({ id: 0 });
-  }
-
-  newPage = () => {
-    this.setState({ page: 0 })
+    document.body.style.background = "url(https://t3.ftcdn.net/jpg/02/38/18/34/360_F_238183482_nR674OSOksAw7UQAEI56j8wBJpnPMYm0.jpg) no-repeat";
+    document.body.style.backgroundSize = "cover";
   }
 
   // contains jsx for Welcome page
   displayWelcomePage = () => {
+    let id;
+
     return (
       <div>
-        <span id="title">Visual Weather Analyzer</span>
+        <span className="title">Visual Weather Analyzer</span>
         <div className="container">
-          <div id="search-div" className="col" onClick={() => this.setID(1)}>
+          <div id="search-div" className="col" onClick={() => { 
+            if (id === 3) {
+              this.setID(0)
+              id = 0;
+            }
+            else {
+              this.setID(1)
+            }
+          }}>
             <span className="main-word">Search</span>
             <p>Analyze the weather of the location of your choice through a simple search!</p>
             <ul>
@@ -49,7 +59,16 @@ export class Welcome extends Component {
             </ul>
             <p>Looking for a more specific search? Use the following format: <br /> {"{"}city name{"}"},{"{"}country code{"}"}</p>
             <p>
-              See this link <a href="https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes" target="_blank" rel="noreferrer">Country Codes</a>
+              See this link 
+              <a 
+                href="https://en.wikipedia.org/wiki/List_of_ISO_3166_country_codes" 
+                target="_blank" 
+                rel="noreferrer" 
+                id="cc-link"
+                onClick={() => {id = 3}}
+              >
+                Country Codes
+              </a>
               &nbsp;for list of country codes <br /> (use Alpha-2 or Alpha-3 code)
             </p>
           </div>

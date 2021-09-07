@@ -1,5 +1,12 @@
 import React, { Component } from 'react';
+import Results from './Results';
+import {
+  fetchCurrentAndFutureForecast,
+  fetchHistoricalForecast,
+  fetchPollutionData
+} from "../FetchForecastData.js";
 import {Map, InfoWindow, Marker, GoogleApiWrapper} from 'google-maps-react';
+import axios from 'axios';
 
 class MapContainer extends Component {
   state = {
@@ -13,9 +20,17 @@ class MapContainer extends Component {
     showingInfoWindow: false,
     showingMarker: false,
     activeMarker: {},
-    showContinueButton: false
+    showContinueButton: false,
+    currentData: {},
+    futureData: {},
+    historicalData: {},
+    pollutionData: {},
+    finalLocationName: "",
+    id: 0,
+    loaded: 0
   };
 
+  // on map click, set latLng along with other state components to work with marker
   onMapClick = (t, map, coord) => {
     const { latLng } = coord;
     const lat = latLng.lat();
@@ -32,9 +47,8 @@ class MapContainer extends Component {
       });
     }
 
-    this.setState({ showContinueButton: true });
-
     this.setState({
+      showContinueButton: true,
       markers: [
         {
           title: "",
@@ -43,16 +57,14 @@ class MapContainer extends Component {
         }
       ]
     });
-
   }
 
+  // on marker click, actually show the marker
   onMarkerClick = (props, marker, e) => {
     this.setState({
       activeMarker: marker,
       showingInfoWindow: true
     });
-
-    console.log(this.state.markers[0].position)
   }
 
   //create InfoWindow lat/lng text information
@@ -67,15 +79,58 @@ class MapContainer extends Component {
     return latLng;
   }
 
-  display = () => {
-    console.log('in display')
+  // get final location name by reverse geolocating
+  getFinalLocationName = async (API_KEY, lat, lon) => {
+    const API_URL = `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`;
+    let finalLocationName;
 
-    this.props.onBackButtonClick();
+    await axios.get(API_URL)
+    .then(res => {
+      // located in a state
+      if (res.data[0].state) {
+        finalLocationName = `${res.data[0].name},${res.data[0].state},${res.data[0].country}`;
+      }
+      // not located in a state
+      else {
+        finalLocationName = `${res.data[0].name},${res.data[0].country}`;
+      }
+
+      this.setState({ finalLocationName })
+    })
+    .catch(err => {
+      console.log(err);
+    });
   }
 
-  render() {
-    if (!this.props.loaded) {
-      return <div>Loading...</div>;
+  // when continue button clicked, get lat, lon and fetch forecasts + final location name
+  onContinueButtonClick = async () => {
+    this.setState({ loaded: 1});
+
+    const API_KEY = process.env.REACT_APP_WEATHER_API_KEY;
+    let lat = this.state.markers[0].position.lat.toFixed(2);
+    let lon = this.state.markers[0].position.lng.toFixed(2);
+
+    let [currentData, futureData] = await fetchCurrentAndFutureForecast(API_KEY, lat, lon);
+    let historicalData = await fetchHistoricalForecast(API_KEY, lat, lon)
+    let pollutionData = await fetchPollutionData(API_KEY, lat, lon);
+    
+    await this.setState({ currentData, futureData, historicalData, pollutionData, id: 1});
+    
+    let dataObj = {
+      current: this.state.currentData,
+      historical: this.state.historicalData,
+      future: this.state.futureData,
+      pollution: this.state.pollutionData
+    };
+    
+    await this.getFinalLocationName(API_KEY, lat, lon);
+    console.log("data for " + this.state.finalLocationName, dataObj);
+  }
+
+  // function to display page
+  displaySearchPage = () => {
+    if (!this.props.loaded || this.state.loaded) {
+      return <p style={{fontSize: 50}}>Loading...</p>;
     }
 
     return (
@@ -113,9 +168,28 @@ class MapContainer extends Component {
           </Map>
         </div>
         <button id="back-btn" className="conditional-btn" onClick={this.props.onBackButtonClick}>Back</button>
-        {this.state.showContinueButton ? <button id="continue-btn" className="conditional-btn">Continue</button> : null}
+        {this.state.showContinueButton ? <button id="continue-btn" className="conditional-btn" onClick={this.onContinueButtonClick}>Continue</button> : null}
       </div>
     );
+  }
+
+  render() {
+    return (
+      <div>
+        {
+        !this.state.id 
+        ? this.displaySearchPage() 
+        : <Results 
+            name={this.state.finalLocationName} 
+            currentData={this.state.currentData} 
+            futureData={this.state.futureData} 
+            historicalData={this.state.historicalData}
+            pollutionData={this.state.pollutionData}
+            returnHome={this.props.onBackButtonClick}
+          />
+        }
+    </div>
+    )
   }
 }
 

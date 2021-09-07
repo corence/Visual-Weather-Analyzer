@@ -1,7 +1,10 @@
-//wind vane, anemometer
-
 import React, {Component} from 'react';
 import axios from 'axios';
+import {
+  fetchCurrentAndFutureForecast,
+  fetchHistoricalForecast,
+  fetchPollutionData
+} from "../FetchForecastData.js";;
 
 class FetchAndDisplay extends Component {
   constructor (props) {
@@ -16,6 +19,7 @@ class FetchAndDisplay extends Component {
     currentData: {},
     futureData: {},
     historicalData: {},
+    pollutionData: {},
     finalLocationName: "",
     locationIndex: null,
     showContinueButton: false
@@ -72,66 +76,40 @@ class FetchAndDisplay extends Component {
     this.setState({ showComponent: true });
   }
 
-  // fetch future forecast when continue button clicked
-  fetchFutureForecast = async (API_KEY, lat, lon) => {
-    let currentData, futureData;
-
-    // predicts **daily**/hourly/minutely temps for next 7 days
-    const API_URL = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=imperial&appid=${API_KEY}`;
-
-    await axios.get(API_URL)
-    .then(res => {
-      currentData = res.data.current;
-      futureData = res.data.daily;
-    })
-    .catch(err => {
-      console.log(err);
-    });
-
-    this.setState({ currentData, futureData });
-  }
-
-  // fetch historical forecast when continue button clicked
-  //shows current/hourly data for 5 days ago
-  fetchHistoricalForecast = async (API_KEY, lat, lon) => {
-    let time, API_URL;
-    let historicalData = {};
-
-    // 1-5 days
-    for (let i = 1; i < 6; i++) {
-      time = ((Math.floor(Date.now()/1000)) - (86400 * i+1));
-
-      // fetches up to 5 past days forecast 
-      API_URL = `https://api.openweathermap.org/data/2.5/onecall/timemachine?lat=${lat}&lon=${lon}&dt=${time}&units=imperial&appid=${API_KEY}`;
-      await axios.get(API_URL)
-      .then(res => {
-        // console.log(res);
-        historicalData[i-1] = res.data.current;
-      })
-      .catch(err => {
-        console.log(err);
-      })
-    }
-
-    this.setState({ historicalData });
-  }
-
-  //when continue button clicked, get lat, lon and fetch future and historical forecast
+  //when continue button clicked, get lat, lon and forecasts
   onContinueButtonClick = async () => {
+    this.setState({ errorMsg: "Loading..."});
+
     const API_KEY = process.env.REACT_APP_WEATHER_API_KEY;
 
     let latLonArray = Object.values(this.state.geolocationObject);
     let lat = latLonArray[this.state.locationIndex][0];
     let lon = latLonArray[this.state.locationIndex][1];
 
-    await this.fetchFutureForecast(API_KEY, lat, lon);
-    await this.fetchHistoricalForecast(API_KEY, lat, lon);
+    let [currentData, futureData] = await fetchCurrentAndFutureForecast(API_KEY, lat, lon);
+    let historicalData = await fetchHistoricalForecast(API_KEY, lat, lon)
+    let pollutionData = await fetchPollutionData(API_KEY, lat, lon);
     
-    console.log("current data for " + this.state.finalLocationName, this.state.currentData);
-    console.log("historical data for " + this.state.finalLocationName, this.state.historicalData);
-    console.log("future data for " + this.state.finalLocationName, this.state.futureData);
+    await this.setState({ currentData, futureData, historicalData, pollutionData })
+
+    let dataObj = {
+      current: this.state.currentData,
+      historical: this.state.historicalData,
+      future: this.state.futureData,
+      pollution: this.state.pollutionData
+    };
+    
+    console.log("data for " + this.state.finalLocationName, dataObj);
+
     // pass data to parent function to change flag (send to result screen)
-    this.props.onContinue(this.state.locationIndex, this.state.finalLocationName, this.state.currentData, this.state.futureData, this.state.historicalData);
+    this.props.onContinue(
+      this.state.locationIndex, 
+      this.state.finalLocationName, 
+      this.state.currentData, 
+      this.state.futureData, 
+      this.state.historicalData, 
+      this.state.pollutionData
+    );
   }
 
   //When one of location button clicks set index, finalLocationName, and showContinueButton
@@ -160,7 +138,6 @@ class FetchAndDisplay extends Component {
           else {
             id = null;
           }
-          // return <button key={index} className="location-btn" onClick={this.selectLocationButton}>{value[2]}</button>;
           return <button key={index} value={index} className="location-btn" id={id} onClick={this.selectLocationButton}>{value[2]}</button>;
         });
       }

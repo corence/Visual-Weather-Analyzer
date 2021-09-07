@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import FetchAndDisplay from './FetchAndDisplay';
+import DisplaySearch from './DisplaySearch';
 import Results from './Results';
 
 class MyForm extends Component {
@@ -10,10 +10,10 @@ class MyForm extends Component {
     showComponent: false,
     locationIndex: null,
     id: 0,
-    // id: 1,
     currentData: {},
     futureData: {},
     historicalData: {},
+    pollutionData: {},
     finalLocationName: ""
   };
 
@@ -103,25 +103,27 @@ class MyForm extends Component {
   } 
 
   //if no error, try to render
-  renderFD = () => {
+  renderSearchInfo = () => {
     const [city, countryCode] = this.getProps();
-    //issue 
-    return <FetchAndDisplay city={city} countryCode={countryCode} onContinue={this.continue}/>;
+    return <DisplaySearch city={city} countryCode={countryCode} onContinue={this.continue}/>;
   }
 
-  continue = (locationIndex, finalLocationName, currentData, futureData, historicalData) => {
+  // set the state of all the data, including id to 1 in order to render Results component
+  continue = (locationIndex, finalLocationName, currentData, futureData, historicalData, pollutionData) => {
     if (locationIndex !== this.state.locationIndex) {
       this.setState({ 
         id: 1,
         locationIndex,
+        finalLocationName,
         currentData,
         futureData,
         historicalData,
-        finalLocationName
+        pollutionData
       });
     }
   }
 
+  // function to display page
   displaySearchPage = () => {
     return (
       <div id="form-div">
@@ -131,7 +133,7 @@ class MyForm extends Component {
             <br />
             <input id="text-entry-btn" type="submit" value="SUBMIT" />
           </form>
-          {this.state.showComponent ? this.renderFD() : <p>{this.state.errorMsg}</p>}
+          {this.state.showComponent ? this.renderSearchInfo() : <p>{this.state.errorMsg}</p>}
         </div>
         <button id="back-btn" className="conditional-btn" onClick={this.props.onBackButtonClick}>Back</button>
       </div>
@@ -148,8 +150,9 @@ class MyForm extends Component {
             name={this.state.finalLocationName} 
             currentData={this.state.currentData} 
             futureData={this.state.futureData} 
-            historicalData={this.state.historicalData} 
-            returnHome={this.props.onBackButtonClick} 
+            historicalData={this.state.historicalData}
+            pollutionData={this.state.pollutionData}
+            returnHome={this.props.onBackButtonClick}
           />
         }
       </div>
