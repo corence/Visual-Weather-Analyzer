@@ -180,7 +180,6 @@ class MapContainer extends Component {
         !this.state.id 
         ? this.displaySearchPage() 
         : <Results 
-            name={this.state.finalLocationName} 
             currentData={this.state.currentData} 
             futureData={this.state.futureData} 
             historicalData={this.state.historicalData}

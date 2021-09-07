@@ -109,12 +109,11 @@ class MyForm extends Component {
   }
 
   // set the state of all the data, including id to 1 in order to render Results component
-  continue = (locationIndex, finalLocationName, currentData, futureData, historicalData, pollutionData) => {
+  continue = (locationIndex, currentData, futureData, historicalData, pollutionData) => {
     if (locationIndex !== this.state.locationIndex) {
       this.setState({ 
         id: 1,
         locationIndex,
-        finalLocationName,
         currentData,
         futureData,
         historicalData,

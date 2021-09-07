@@ -104,7 +104,6 @@ class FetchAndDisplay extends Component {
     // pass data to parent function to change flag (send to result screen)
     this.props.onContinue(
       this.state.locationIndex, 
-      this.state.finalLocationName, 
       this.state.currentData, 
       this.state.futureData, 
       this.state.historicalData, 

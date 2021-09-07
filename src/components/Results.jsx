@@ -11,7 +11,6 @@ export class Results extends Component {
     super(props);
 
     this.state = {
-      name: this.props.name,
       currentData: this.props.currentData,
       futureData: this.props.futureData,
       historicalData: this.props.historicalData,
