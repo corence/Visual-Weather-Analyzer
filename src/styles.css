@@ -246,22 +246,19 @@ li {
 #back-btn {
   background-color: #DC143C;
   position: fixed;
-  bottom: 2em;
-  left: 28.5em;
+  bottom: 0em;
+  left: 25em;
 }
 
 #home-btn {
   background-color: #DC143C;
-  position: fixed;
-  bottom: 2em;
-  left: 34.2em;
 }
 
 #continue-btn {
   background-color: #228B22;
   position: fixed;
-  bottom: 2em;
-  left: 40.5em;
+  bottom: 0em;
+  left: 37em;
   height: 3em;
   width: 11em;
 }
